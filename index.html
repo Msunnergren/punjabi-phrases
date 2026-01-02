@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punjabi Phrases for Baby</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.85);
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+        }
+
+        .categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .category-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .category-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .category-btn.active {
+            background: white;
+            color: #764ba2;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 8px;
+            background: transparent;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+
+        .phrases {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .phrase-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .gurmukhi {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .romanized {
+            font-size: 1.1rem;
+            color: #667eea;
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+
+        .english {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .favorite-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: all 0.2s;
+        }
+
+        .favorite-btn:hover {
+            opacity: 0.6;
+        }
+
+        .favorite-btn.favorited {
+            opacity: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+
+        .show-favorites-btn {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .show-favorites-btn.active {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Punjabi Phrases</h1>
+        <p class="subtitle">Simple phrases for talking to your little one</p>
+
+        <div class="categories" id="categories"></div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="shuffle()">Shuffle</button>
+            <button class="control-btn show-favorites-btn" id="favoritesBtn" onclick="toggleFavorites()">Favorites</button>
+        </div>
+
+        <div class="phrases" id="phrases">
+            <div class="empty-state">Select a category above to see phrases</div>
+        </div>
+    </div>
+
+    <script>
+        const phrases = {
+            mealtime: [
+                { gurmukhi: "ਆ, ਖਾਣਾ ਖਾਈਏ", romanized: "aa, khaana khaaiye", english: "Come, let's eat" },
+                { gurmukhi: "ਮੂੰਹ ਖੋਲ੍ਹੋ", romanized: "moonh kholo", english: "Open your mouth" },
+                { gurmukhi: "ਬਹੁਤ ਸੁਆਦੀ ਹੈ", romanized: "bahut suaadi hai", english: "It's very tasty" },
+                { gurmukhi: "ਹੋਰ ਚਾਹੀਦਾ?", romanized: "hor chaahida?", english: "Want more?" },
+                { gurmukhi: "ਪਾਣੀ ਪੀਓ", romanized: "paani peeo", english: "Drink water" },
+                { gurmukhi: "ਦੁੱਧ ਪੀਓ", romanized: "duddh peeo", english: "Drink milk" },
+                { gurmukhi: "ਸ਼ਾਬਾਸ਼! ਸਾਰਾ ਖਾ ਲਿਆ", romanized: "shabaash! saara kha liya", english: "Well done! You ate it all" },
+                { gurmukhi: "ਚੱਮਚ ਫੜੋ", romanized: "chammach pharo", english: "Hold the spoon" },
+                { gurmukhi: "ਹੌਲੀ ਹੌਲੀ ਖਾਓ", romanized: "hauli hauli khao", english: "Eat slowly" },
+                { gurmukhi: "ਪੇਟ ਭਰ ਗਿਆ?", romanized: "pet bhar giya?", english: "Is your tummy full?" }
+            ],
+            bathtime: [
+                { gurmukhi: "ਨਹਾਉਣ ਦਾ ਵੇਲਾ ਹੈ", romanized: "nahaun da vela hai", english: "It's bath time" },
+                { gurmukhi: "ਪਾਣੀ ਗਰਮ ਹੈ", romanized: "paani garam hai", english: "The water is warm" },
+                { gurmukhi: "ਛਪਾਕ ਛਪਾਕ!", romanized: "chhapaak chhapaak!", english: "Splash splash!" },
+                { gurmukhi: "ਸਾਬਣ ਲਗਾਈਏ", romanized: "saaban lagaaiye", english: "Let's put soap" },
+                { gurmukhi: "ਸਿਰ ਧੋਈਏ", romanized: "sir dhoiye", english: "Let's wash your head" },
+                { gurmukhi: "ਅੱਖਾਂ ਬੰਦ ਕਰੋ", romanized: "akkhaan band karo", english: "Close your eyes" },
+                { gurmukhi: "ਹੱਥ ਧੋਈਏ", romanized: "hatth dhoiye", english: "Let's wash hands" },
+                { gurmukhi: "ਪੈਰ ਧੋਈਏ", romanized: "pair dhoiye", english: "Let's wash feet" },
+                { gurmukhi: "ਬਹੁਤ ਸਾਫ਼!", romanized: "bahut saaf!", english: "So clean!" },
+                { gurmukhi: "ਤੌਲੀਏ ਵਿੱਚ ਲਪੇਟੀਏ", romanized: "tauliye vich lapetiye", english: "Let's wrap in a towel" }
+            ],
+            playtime: [
+                { gurmukhi: "ਆਓ ਖੇਡੀਏ!", romanized: "aao khediye!", english: "Let's play!" },
+                { gurmukhi: "ਗੇਂਦ ਸੁੱਟੋ", romanized: "gend sutto", english: "Throw the ball" },
+                { gurmukhi: "ਫੜ ਲਓ!", romanized: "phar lao!", english: "Catch it!" },
+                { gurmukhi: "ਤਾੜੀ ਵਜਾਓ", romanized: "taari vajaao", english: "Clap your hands" },
+                { gurmukhi: "ਲੁਕ ਛੁਪ!", romanized: "lukk chhup!", english: "Peek-a-boo!" },
+                { gurmukhi: "ਕਿੱਥੇ ਹੈ ਬੇਬੀ?", romanized: "kitthe hai baby?", english: "Where's the baby?" },
+                { gurmukhi: "ਇੱਥੇ ਹੈ!", romanized: "itthe hai!", english: "Here you are!" },
+                { gurmukhi: "ਬਹੁਤ ਮਜ਼ਾ ਆਇਆ!", romanized: "bahut mazaa aaya!", english: "That was so fun!" },
+                { gurmukhi: "ਹੋਰ ਖੇਡੀਏ?", romanized: "hor khediye?", english: "Shall we play more?" },
+                { gurmukhi: "ਉੱਚਾ ਉੱਚਾ!", romanized: "uchcha uchcha!", english: "Up up!" }
+            ],
+            bedtime: [
+                { gurmukhi: "ਸੌਣ ਦਾ ਵੇਲਾ ਹੈ", romanized: "saun da vela hai", english: "It's time to sleep" },
+                { gurmukhi: "ਸ਼ੁਭ ਰਾਤਰੀ", romanized: "shubh raatri", english: "Good night" },
+                { gurmukhi: "ਮਿੱਠੇ ਸੁਪਨੇ", romanized: "mitthe supne", english: "Sweet dreams" },
+                { gurmukhi: "ਅੱਖਾਂ ਬੰਦ ਕਰੋ", romanized: "akkhaan band karo", english: "Close your eyes" },
+                { gurmukhi: "ਮੰਮੀ ਇੱਥੇ ਹੈ", romanized: "mummy itthe hai", english: "Mommy is here" },
+                { gurmukhi: "ਡੈਡੀ ਇੱਥੇ ਹੈ", romanized: "daddy itthe hai", english: "Daddy is here" },
+                { gurmukhi: "ਸੋ ਜਾ, ਬੱਚੇ", romanized: "so ja, bachche", english: "Sleep, little one" },
+                { gurmukhi: "ਲੋਰੀ ਸੁਣੋ", romanized: "lori suno", english: "Listen to a lullaby" },
+                { gurmukhi: "ਚੁੱਪ ਚੁੱਪ", romanized: "chup chup", english: "Hush hush" },
+                { gurmukhi: "ਕੱਲ੍ਹ ਮਿਲਾਂਗੇ", romanized: "kall milaange", english: "See you tomorrow" }
+            ],
+            dressing: [
+                { gurmukhi: "ਕੱਪੜੇ ਪਾਈਏ", romanized: "kappre paaiye", english: "Let's put on clothes" },
+                { gurmukhi: "ਬਾਂਹ ਪਾਓ", romanized: "baanh paao", english: "Put your arm in" },
+                { gurmukhi: "ਸਿਰ ਪਾਓ", romanized: "sir paao", english: "Put your head through" },
+                { gurmukhi: "ਲੱਤ ਪਾਓ", romanized: "latt paao", english: "Put your leg in" },
+                { gurmukhi: "ਜੁਰਾਬਾਂ ਪਾਈਏ", romanized: "juraabaan paaiye", english: "Let's put on socks" },
+                { gurmukhi: "ਜੁੱਤੀ ਪਾਈਏ", romanized: "jutti paaiye", english: "Let's put on shoes" },
+                { gurmukhi: "ਟੋਪੀ ਪਾਈਏ", romanized: "topi paaiye", english: "Let's put on a hat" },
+                { gurmukhi: "ਬਹੁਤ ਸੋਹਣੇ ਲੱਗ ਰਹੇ ਹੋ!", romanized: "bahut sohne lagg rahe ho!", english: "You look so cute!" },
+                { gurmukhi: "ਤਿਆਰ ਹੋ ਗਏ!", romanized: "tiyaar ho gaye!", english: "All ready!" },
+                { gurmukhi: "ਬਟਨ ਲਗਾਈਏ", romanized: "batan lagaaiye", english: "Let's button up" }
+            ],
+            diaper: [
+                { gurmukhi: "ਲੰਗੋਟ ਬਦਲੀਏ", romanized: "langot badliye", english: "Let's change your diaper" },
+                { gurmukhi: "ਲੇਟ ਜਾਓ", romanized: "let jaao", english: "Lie down" },
+                { gurmukhi: "ਲੱਤਾਂ ਉੱਪਰ", romanized: "lattaan uppar", english: "Legs up" },
+                { gurmukhi: "ਸਾਫ਼ ਕਰੀਏ", romanized: "saaf kariye", english: "Let's clean" },
+                { gurmukhi: "ਬੱਸ ਹੋ ਗਿਆ!", romanized: "bas ho giya!", english: "All done!" },
+                { gurmukhi: "ਹੁਣ ਬਹੁਤ ਸਾਫ਼ ਹੋ", romanized: "hun bahut saaf ho", english: "Now you're all clean" },
+                { gurmukhi: "ਚੰਗੇ ਬੱਚੇ", romanized: "change bachche", english: "Good baby" },
+                { gurmukhi: "ਥੋੜਾ ਰੁਕੋ", romanized: "thora ruko", english: "Wait a moment" },
+                { gurmukhi: "ਹਿੱਲੋ ਨਾ", romanized: "hillo na", english: "Don't wiggle" }
+            ],
+            outside: [
+                { gurmukhi: "ਬਾਹਰ ਚੱਲੀਏ", romanized: "baahar challiye", english: "Let's go outside" },
+                { gurmukhi: "ਸੈਰ ਕਰੀਏ", romanized: "sair kariye", english: "Let's go for a walk" },
+                { gurmukhi: "ਦੇਖੋ, ਕੁੱਤਾ!", romanized: "dekho, kutta!", english: "Look, a dog!" },
+                { gurmukhi: "ਦੇਖੋ, ਪੰਛੀ!", romanized: "dekho, panchhi!", english: "Look, a bird!" },
+                { gurmukhi: "ਫੁੱਲ ਦੇਖੋ", romanized: "phull dekho", english: "Look at the flowers" },
+                { gurmukhi: "ਸੂਰਜ ਚਮਕ ਰਿਹਾ ਹੈ", romanized: "suraj chamak riha hai", english: "The sun is shining" },
+                { gurmukhi: "ਹਵਾ ਚੱਲ ਰਹੀ ਹੈ", romanized: "hava chall rahi hai", english: "The wind is blowing" },
+                { gurmukhi: "ਦਰੱਖਤ ਦੇਖੋ", romanized: "darakht dekho", english: "Look at the tree" },
+                { gurmukhi: "ਘਰ ਚੱਲੀਏ", romanized: "ghar challiye", english: "Let's go home" },
+                { gurmukhi: "ਬਾਹਰ ਠੰਡ ਹੈ", romanized: "baahar thand hai", english: "It's cold outside" }
+            ],
+            comfort: [
+                { gurmukhi: "ਮੈਂ ਤੈਨੂੰ ਪਿਆਰ ਕਰਦੀ ਹਾਂ", romanized: "main tenu pyaar kardi haan", english: "I love you (said by mom)" },
+                { gurmukhi: "ਮੈਂ ਤੈਨੂੰ ਪਿਆਰ ਕਰਦਾ ਹਾਂ", romanized: "main tenu pyaar karda haan", english: "I love you (said by dad)" },
+                { gurmukhi: "ਆਜਾ, ਗਲੇ ਲੱਗ", romanized: "aaja, gale lagg", english: "Come, have a hug" },
+                { gurmukhi: "ਰੋ ਨਾ", romanized: "ro na", english: "Don't cry" },
+                { gurmukhi: "ਸਭ ਠੀਕ ਹੈ", romanized: "sab theek hai", english: "Everything is okay" },
+                { gurmukhi: "ਮੈਂ ਇੱਥੇ ਹਾਂ", romanized: "main itthe haan", english: "I'm here" },
+                { gurmukhi: "ਮੇਰਾ ਬੱਚਾ", romanized: "mera bachcha", english: "My baby" },
+                { gurmukhi: "ਮੇਰੀ ਜਾਨ", romanized: "meri jaan", english: "My darling (lit. my life)" },
+                { gurmukhi: "ਕੀ ਹੋਇਆ?", romanized: "ki hoya?", english: "What happened?" },
+                { gurmukhi: "ਚੁੱਪ, ਚੁੱਪ, ਚੁੱਪ", romanized: "chup, chup, chup", english: "Shh, shh, shh" },
+                { gurmukhi: "ਬਹੁਤ ਪਿਆਰੇ ਹੋ", romanized: "bahut pyaare ho", english: "You are so loved" },
+                { gurmukhi: "ਡਰੋ ਨਾ", romanized: "daro na", english: "Don't be scared" }
+            ]
+        };
+
+        const categoryLabels = {
+            mealtime: "Mealtime",
+            bathtime: "Bath Time",
+            playtime: "Playtime",
+            bedtime: "Bedtime",
+            dressing: "Getting Dressed",
+            diaper: "Diaper Change",
+            outside: "Going Outside",
+            comfort: "Comfort"
+        };
+
+        let currentCategory = null;
+        let displayedPhrases = [];
+        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let showingFavorites = false;
+
+        function init() {
+            const categoriesDiv = document.getElementById('categories');
+            Object.keys(categoryLabels).forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.textContent = categoryLabels[key];
+                btn.onclick = () => selectCategory(key);
+                btn.id = `cat-${key}`;
+                categoriesDiv.appendChild(btn);
+            });
+        }
+
+        function selectCategory(category) {
+            showingFavorites = false;
+            document.getElementById('favoritesBtn').classList.remove('active');
+
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`cat-${category}`).classList.add('active');
+
+            currentCategory = category;
+            displayPhrases(getRandomPhrases(category, 6));
+        }
+
+        function getRandomPhrases(category, count) {
+            const available = [...phrases[category]];
+            const result = [];
+            while (result.length < count && available.length > 0) {
+                const idx = Math.floor(Math.random() * available.length);
+                result.push(available.splice(idx, 1)[0]);
+            }
+            return result;
+        }
+
+        function displayPhrases(phrasesToShow) {
+            displayedPhrases = phrasesToShow;
+            const container = document.getElementById('phrases');
+
+            if (phrasesToShow.length === 0) {
+                container.innerHTML = '<div class="empty-state">No phrases to show</div>';
+                return;
+            }
+
+            container.innerHTML = phrasesToShow.map((p, idx) => {
+                const isFav = isFavorite(p);
+                return `
+                    <div class="phrase-card">
+                        <button class="favorite-btn ${isFav ? 'favorited' : ''}" onclick="toggleFavorite(${idx})">
+                            ${isFav ? '❤️' : '🤍'}
+                        </button>
+                        <div class="gurmukhi">${p.gurmukhi}</div>
+                        <div class="romanized">${p.romanized}</div>
+                        <div class="english">${p.english}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function shuffle() {
+            if (showingFavorites) {
+                displayPhrases(shuffleArray([...favorites]));
+            } else if (currentCategory) {
+                displayPhrases(getRandomPhrases(currentCategory, 6));
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function isFavorite(phrase) {
+            return favorites.some(f => f.gurmukhi === phrase.gurmukhi);
+        }
+
+        function toggleFavorite(idx) {
+            const phrase = displayedPhrases[idx];
+            const favIdx = favorites.findIndex(f => f.gurmukhi === phrase.gurmukhi);
+
+            if (favIdx >= 0) {
+                favorites.splice(favIdx, 1);
+            } else {
+                favorites.push(phrase);
+            }
+
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            displayPhrases(displayedPhrases);
+        }
+
+        function toggleFavorites() {
+            showingFavorites = !showingFavorites;
+            const btn = document.getElementById('favoritesBtn');
+
+            if (showingFavorites) {
+                btn.classList.add('active');
+                document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+                currentCategory = null;
+                displayPhrases(favorites);
+            } else {
+                btn.classList.remove('active');
+                document.getElementById('phrases').innerHTML = '<div class="empty-state">Select a category above to see phrases</div>';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
