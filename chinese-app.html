@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chinese Flashcards</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            color: #eee;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .stat-new { color: #4ecdc4; }
+        .stat-learning { color: #ffe66d; }
+        .stat-learned { color: #95e1a3; }
+        .stat-due { color: #ff6b6b; }
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .filter-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #2d2d44;
+            color: #aaa;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #4a4a6a;
+            color: #fff;
+        }
+
+        .card-container {
+            perspective: 1000px;
+            margin-bottom: 16px;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            min-height: 280px;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.4s;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            min-height: 280px;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            transform: rotateY(180deg);
+        }
+
+        .card-english {
+            font-size: 1.3rem;
+            line-height: 1.5;
+        }
+
+        .card-chinese {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .card-pinyin {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.85);
+            font-style: italic;
+        }
+
+        .card-expression {
+            font-size: 0.85rem;
+            margin-top: 16px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+        }
+
+        .card-tag {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .buttons.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-again {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-hard {
+            background: #ffe66d;
+            color: #333;
+        }
+
+        .btn-good {
+            background: #4ecdc4;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 12px;
+            color: #aaa;
+        }
+
+        .tap-hint {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 16px;
+        }
+
+        .progress-bar-container {
+            height: 4px;
+            background: #2d2d44;
+            border-radius: 2px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #95e1a3);
+            transition: width 0.3s;
+        }
+
+        .session-info {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Chinese Flashcards</h1>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value stat-new" id="newCount">0</div>
+                    <div>New</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value stat-learning" id="learningCount">0</div>
+                    <div>Learning</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value stat-learned" id="learnedCount">0</div>
+                    <div>Learned</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value stat-due" id="dueCount">0</div>
+                    <div>Due</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="filters">
+            <div class="filter-group">
+                <button class="filter-btn active" data-type="all">All</button>
+                <button class="filter-btn" data-type="chengyu">成语</button>
+                <button class="filter-btn" data-type="colloquial">Colloquial</button>
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn active" data-mode="both">Both</button>
+                <button class="filter-btn" data-mode="new">New</button>
+                <button class="filter-btn" data-mode="review">Review</button>
+            </div>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="session-info" id="sessionInfo"></div>
+
+        <div id="cardArea"></div>
+
+        <div class="buttons" id="buttons">
+            <button class="btn btn-again" onclick="answer('again')">Again</button>
+            <button class="btn btn-hard" onclick="answer('hard')">Hard</button>
+            <button class="btn btn-good" onclick="answer('good')">Good</button>
+        </div>
+    </div>
+
+    <script>
+    // Card data - Chengyu (items 1-100)
+    const cardData = [
+        // 1. 一塌糊涂
+        {id:"c1a",type:"chengyu",expression:"一塌糊涂",pinyin:"yī tā hú tu",english:"a complete mess",front:"The room is a complete mess.",back:"房间一塌糊涂。",backPinyin:"Fángjiān yī tā hú tu."},
+        {id:"c1b",type:"chengyu",expression:"一塌糊涂",pinyin:"yī tā hú tu",english:"a complete mess",front:"I messed up completely.",back:"我搞得一塌糊涂。",backPinyin:"Wǒ gǎo de yī tā hú tu."},
+        // 2. 乱七八糟
+        {id:"c2a",type:"chengyu",expression:"乱七八糟",pinyin:"luàn qī bā zāo",english:"chaotic, messy",front:"Your desk is so messy.",back:"你桌子乱七八糟的。",backPinyin:"Nǐ zhuōzi luàn qī bā zāo de."},
+        {id:"c2b",type:"chengyu",expression:"乱七八糟",pinyin:"luàn qī bā zāo",english:"chaotic, messy",front:"Everything is chaotic.",back:"什么都乱七八糟。",backPinyin:"Shénme dōu luàn qī bā zāo."},
+        // 3. 莫名其妙
+        {id:"c3a",type:"chengyu",expression:"莫名其妙",pinyin:"mò míng qí miào",english:"baffling, inexplicable",front:"He got angry for no reason.",back:"他莫名其妙就生气了。",backPinyin:"Tā mò míng qí miào jiù shēngqì le."},
+        {id:"c3b",type:"chengyu",expression:"莫名其妙",pinyin:"mò míng qí miào",english:"baffling, inexplicable",front:"This is so baffling.",back:"真是莫名其妙。",backPinyin:"Zhēn shì mò míng qí miào."},
+        // 4. 不可思议
+        {id:"c4a",type:"chengyu",expression:"不可思议",pinyin:"bù kě sī yì",english:"unbelievable",front:"That's incredible!",back:"太不可思议了！",backPinyin:"Tài bù kě sī yì le!"},
+        {id:"c4b",type:"chengyu",expression:"不可思议",pinyin:"bù kě sī yì",english:"unbelievable",front:"It's simply unbelievable.",back:"简直不可思议。",backPinyin:"Jiǎnzhí bù kě sī yì."},
+        // 5. 稀里糊涂
+        {id:"c5a",type:"chengyu",expression:"稀里糊涂",pinyin:"xī li hú tu",english:"muddled, confused",front:"I agreed without thinking.",back:"我稀里糊涂就答应了。",backPinyin:"Wǒ xī li hú tu jiù dāying le."},
+        {id:"c5b",type:"chengyu",expression:"稀里糊涂",pinyin:"xī li hú tu",english:"muddled, confused",front:"I fell asleep somehow.",back:"稀里糊涂就睡着了。",backPinyin:"Xī li hú tu jiù shuìzháo le."},
+        // 6. 马马虎虎
+        {id:"c6a",type:"chengyu",expression:"马马虎虎",pinyin:"mǎ ma hū hu",english:"so-so, careless",front:"How was it? So-so.",back:"怎么样？马马虎虎。",backPinyin:"Zěnmeyàng? Mǎ ma hū hu."},
+        {id:"c6b",type:"chengyu",expression:"马马虎虎",pinyin:"mǎ ma hū hu",english:"so-so, careless",front:"Don't be so careless.",back:"别那么马马虎虎的。",backPinyin:"Bié nàme mǎ ma hū hu de."},
+        // 7. 不知所措
+        {id:"c7a",type:"chengyu",expression:"不知所措",pinyin:"bù zhī suǒ cuò",english:"at a loss",front:"I didn't know what to do.",back:"我不知所措。",backPinyin:"Wǒ bù zhī suǒ cuò."},
+        {id:"c7b",type:"chengyu",expression:"不知所措",pinyin:"bù zhī suǒ cuò",english:"at a loss",front:"She was completely at a loss.",back:"她完全不知所措。",backPinyin:"Tā wánquán bù zhī suǒ cuò."},
+        // 8. 心不在焉
+        {id:"c8a",type:"chengyu",expression:"心不在焉",pinyin:"xīn bù zài yān",english:"absent-minded",front:"You seem absent-minded.",back:"你好像心不在焉的。",backPinyin:"Nǐ hǎoxiàng xīn bù zài yān de."},
+        {id:"c8b",type:"chengyu",expression:"心不在焉",pinyin:"xīn bù zài yān",english:"absent-minded",front:"Don't be absent-minded.",back:"别心不在焉的。",backPinyin:"Bié xīn bù zài yān de."},
+        // 9. 自言自语
+        {id:"c9a",type:"chengyu",expression:"自言自语",pinyin:"zì yán zì yǔ",english:"talking to oneself",front:"He's talking to himself again.",back:"他又在自言自语。",backPinyin:"Tā yòu zài zì yán zì yǔ."},
+        {id:"c9b",type:"chengyu",expression:"自言自语",pinyin:"zì yán zì yǔ",english:"talking to oneself",front:"I was muttering to myself.",back:"我在自言自语。",backPinyin:"Wǒ zài zì yán zì yǔ."},
+        // 10. 自作自受
+        {id:"c10a",type:"chengyu",expression:"自作自受",pinyin:"zì zuò zì shòu",english:"you brought it on yourself",front:"You brought it on yourself.",back:"这是自作自受。",backPinyin:"Zhè shì zì zuò zì shòu."},
+        {id:"c10b",type:"chengyu",expression:"自作自受",pinyin:"zì zuò zì shòu",english:"you brought it on yourself",front:"It's your own fault.",back:"自作自受吧。",backPinyin:"Zì zuò zì shòu ba."},
+        // 11. 半途而废
+        {id:"c11a",type:"chengyu",expression:"半途而废",pinyin:"bàn tú ér fèi",english:"give up halfway",front:"Don't give up halfway.",back:"别半途而废。",backPinyin:"Bié bàn tú ér fèi."},
+        {id:"c11b",type:"chengyu",expression:"半途而废",pinyin:"bàn tú ér fèi",english:"give up halfway",front:"He gave up halfway again.",back:"他又半途而废了。",backPinyin:"Tā yòu bàn tú ér fèi le."},
+        // 12. 一五一十
+        {id:"c12a",type:"chengyu",expression:"一五一十",pinyin:"yī wǔ yī shí",english:"in full detail",front:"Tell me everything.",back:"你一五一十说清楚。",backPinyin:"Nǐ yī wǔ yī shí shuō qīngchu."},
+        {id:"c12b",type:"chengyu",expression:"一五一十",pinyin:"yī wǔ yī shí",english:"in full detail",front:"He told me everything.",back:"他一五一十告诉我了。",backPinyin:"Tā yī wǔ yī shí gàosu wǒ le."},
+        // 13. 七上八下
+        {id:"c13a",type:"chengyu",expression:"七上八下",pinyin:"qī shàng bā xià",english:"nervous, unsettled",front:"My heart is racing nervously.",back:"我心里七上八下的。",backPinyin:"Wǒ xīnli qī shàng bā xià de."},
+        {id:"c13b",type:"chengyu",expression:"七上八下",pinyin:"qī shàng bā xià",english:"nervous, unsettled",front:"I feel so unsettled.",back:"心里七上八下。",backPinyin:"Xīnli qī shàng bā xià."},
+        // 14. 三心二意
+        {id:"c14a",type:"chengyu",expression:"三心二意",pinyin:"sān xīn èr yì",english:"indecisive, half-hearted",front:"Don't be half-hearted about it.",back:"别三心二意的。",backPinyin:"Bié sān xīn èr yì de."},
+        {id:"c14b",type:"chengyu",expression:"三心二意",pinyin:"sān xīn èr yì",english:"indecisive, half-hearted",front:"He's always indecisive.",back:"他总是三心二意。",backPinyin:"Tā zǒngshì sān xīn èr yì."},
+        // 15. 东张西望
+        {id:"c15a",type:"chengyu",expression:"东张西望",pinyin:"dōng zhāng xī wàng",english:"looking around nervously",front:"He kept looking around nervously.",back:"他东张西望的。",backPinyin:"Tā dōng zhāng xī wàng de."},
+        {id:"c15b",type:"chengyu",expression:"东张西望",pinyin:"dōng zhāng xī wàng",english:"looking around nervously",front:"Stop looking around!",back:"别东张西望！",backPinyin:"Bié dōng zhāng xī wàng!"},
+        // 16. 自以为是
+        {id:"c16a",type:"chengyu",expression:"自以为是",pinyin:"zì yǐ wéi shì",english:"self-righteous",front:"He's so self-righteous.",back:"他太自以为是了。",backPinyin:"Tā tài zì yǐ wéi shì le."},
+        {id:"c16b",type:"chengyu",expression:"自以为是",pinyin:"zì yǐ wéi shì",english:"self-righteous",front:"Don't be so self-righteous.",back:"别那么自以为是。",backPinyin:"Bié nàme zì yǐ wéi shì."},
+        // 17. 小题大做
+        {id:"c17a",type:"chengyu",expression:"小题大做",pinyin:"xiǎo tí dà zuò",english:"make a mountain out of a molehill",front:"You're making a big deal of nothing.",back:"你这是小题大做。",backPinyin:"Nǐ zhè shì xiǎo tí dà zuò."},
+        {id:"c17b",type:"chengyu",expression:"小题大做",pinyin:"xiǎo tí dà zuò",english:"make a mountain out of a molehill",front:"Don't blow it out of proportion.",back:"别小题大做。",backPinyin:"Bié xiǎo tí dà zuò."},
+        // 18. 一无所知
+        {id:"c18a",type:"chengyu",expression:"一无所知",pinyin:"yī wú suǒ zhī",english:"know nothing about it",front:"I know nothing about this.",back:"我对这个一无所知。",backPinyin:"Wǒ duì zhège yī wú suǒ zhī."},
+        {id:"c18b",type:"chengyu",expression:"一无所知",pinyin:"yī wú suǒ zhī",english:"know nothing about it",front:"He's completely clueless.",back:"他一无所知。",backPinyin:"Tā yī wú suǒ zhī."},
+        // 19. 糊里糊涂
+        {id:"c19a",type:"chengyu",expression:"糊里糊涂",pinyin:"hú li hú tu",english:"muddleheaded",front:"I agreed in a daze.",back:"我糊里糊涂就答应了。",backPinyin:"Wǒ hú li hú tu jiù dāying le."},
+        {id:"c19b",type:"chengyu",expression:"糊里糊涂",pinyin:"hú li hú tu",english:"muddleheaded",front:"Don't be so muddleheaded.",back:"别糊里糊涂的。",backPinyin:"Bié hú li hú tu de."},
+        // 20. 不知不觉
+        {id:"c20a",type:"chengyu",expression:"不知不觉",pinyin:"bù zhī bù jué",english:"without realizing it",front:"Time flew without me noticing.",back:"不知不觉时间就过去了。",backPinyin:"Bù zhī bù jué shíjiān jiù guòqù le."},
+        {id:"c20b",type:"chengyu",expression:"不知不觉",pinyin:"bù zhī bù jué",english:"without realizing it",front:"I fell asleep without realizing.",back:"不知不觉就睡着了。",backPinyin:"Bù zhī bù jué jiù shuìzháo le."},
+        // 21. 迫不及待
+        {id:"c21a",type:"chengyu",expression:"迫不及待",pinyin:"pò bù jí dài",english:"can't wait",front:"I can't wait to go.",back:"我迫不及待想去。",backPinyin:"Wǒ pò bù jí dài xiǎng qù."},
+        {id:"c21b",type:"chengyu",expression:"迫不及待",pinyin:"pò bù jí dài",english:"can't wait",front:"She couldn't wait to open it.",back:"她迫不及待地打开。",backPinyin:"Tā pò bù jí dài de dǎkāi."},
+        // 22. 无可奈何
+        {id:"c22a",type:"chengyu",expression:"无可奈何",pinyin:"wú kě nài hé",english:"helpless",front:"There's nothing I can do.",back:"我也无可奈何。",backPinyin:"Wǒ yě wú kě nài hé."},
+        {id:"c22b",type:"chengyu",expression:"无可奈何",pinyin:"wú kě nài hé",english:"helpless",front:"She looked helpless.",back:"她一脸无可奈何。",backPinyin:"Tā yì liǎn wú kě nài hé."},
+        // 23. 理所当然
+        {id:"c23a",type:"chengyu",expression:"理所当然",pinyin:"lǐ suǒ dāng rán",english:"naturally, as it should be",front:"That's only natural.",back:"这是理所当然的。",backPinyin:"Zhè shì lǐ suǒ dāng rán de."},
+        {id:"c23b",type:"chengyu",expression:"理所当然",pinyin:"lǐ suǒ dāng rán",english:"naturally, as it should be",front:"Don't take it for granted.",back:"别觉得理所当然。",backPinyin:"Bié juéde lǐ suǒ dāng rán."},
+        // 24. 无缘无故
+        {id:"c24a",type:"chengyu",expression:"无缘无故",pinyin:"wú yuán wú gù",english:"for no reason",front:"He hit me for no reason.",back:"他无缘无故打我。",backPinyin:"Tā wú yuán wú gù dǎ wǒ."},
+        {id:"c24b",type:"chengyu",expression:"无缘无故",pinyin:"wú yuán wú gù",english:"for no reason",front:"Why are you mad for no reason?",back:"你无缘无故发什么火？",backPinyin:"Nǐ wú yuán wú gù fā shénme huǒ?"},
+        // 25. 毫无疑问
+        {id:"c25a",type:"chengyu",expression:"毫无疑问",pinyin:"háo wú yí wèn",english:"without a doubt",front:"Without a doubt, he's the best.",back:"毫无疑问他最棒。",backPinyin:"Háo wú yí wèn tā zuì bàng."},
+        {id:"c25b",type:"chengyu",expression:"毫无疑问",pinyin:"háo wú yí wèn",english:"without a doubt",front:"This is definitely true.",back:"这毫无疑问是真的。",backPinyin:"Zhè háo wú yí wèn shì zhēn de."},
+        // 26. 乱成一团
+        {id:"c26a",type:"chengyu",expression:"乱成一团",pinyin:"luàn chéng yī tuán",english:"in total chaos",front:"Everything is in chaos.",back:"一切都乱成一团。",backPinyin:"Yíqiè dōu luàn chéng yī tuán."},
+        {id:"c26b",type:"chengyu",expression:"乱成一团",pinyin:"luàn chéng yī tuán",english:"in total chaos",front:"The meeting was chaotic.",back:"会议乱成一团。",backPinyin:"Huìyì luàn chéng yī tuán."},
+        // 27. 一干二净
+        {id:"c27a",type:"chengyu",expression:"一干二净",pinyin:"yī gān èr jìng",english:"completely, thoroughly",front:"I forgot everything completely.",back:"我忘得一干二净。",backPinyin:"Wǒ wàng de yī gān èr jìng."},
+        {id:"c27b",type:"chengyu",expression:"一干二净",pinyin:"yī gān èr jìng",english:"completely, thoroughly",front:"Clean it up completely.",back:"收拾得一干二净。",backPinyin:"Shōushi de yī gān èr jìng."},
+        // 28. 异想天开
+        {id:"c28a",type:"chengyu",expression:"异想天开",pinyin:"yì xiǎng tiān kāi",english:"wishful thinking",front:"That's just wishful thinking.",back:"你这是异想天开。",backPinyin:"Nǐ zhè shì yì xiǎng tiān kāi."},
+        {id:"c28b",type:"chengyu",expression:"异想天开",pinyin:"yì xiǎng tiān kāi",english:"wishful thinking",front:"Don't be so unrealistic.",back:"别异想天开了。",backPinyin:"Bié yì xiǎng tiān kāi le."},
+        // 29. 胡思乱想
+        {id:"c29a",type:"chengyu",expression:"胡思乱想",pinyin:"hú sī luàn xiǎng",english:"let imagination run wild",front:"Stop overthinking.",back:"别胡思乱想了。",backPinyin:"Bié hú sī luàn xiǎng le."},
+        {id:"c29b",type:"chengyu",expression:"胡思乱想",pinyin:"hú sī luàn xiǎng",english:"let imagination run wild",front:"I was overthinking again.",back:"我又在胡思乱想。",backPinyin:"Wǒ yòu zài hú sī luàn xiǎng."},
+        // 30. 心甘情愿
+        {id:"c30a",type:"chengyu",expression:"心甘情愿",pinyin:"xīn gān qíng yuàn",english:"willingly, gladly",front:"I did it willingly.",back:"我心甘情愿的。",backPinyin:"Wǒ xīn gān qíng yuàn de."},
+        {id:"c30b",type:"chengyu",expression:"心甘情愿",pinyin:"xīn gān qíng yuàn",english:"willingly, gladly",front:"She's willing to help.",back:"她心甘情愿帮忙。",backPinyin:"Tā xīn gān qíng yuàn bāngmáng."},
+        // 31. 无精打采
+        {id:"c31a",type:"chengyu",expression:"无精打采",pinyin:"wú jīng dǎ cǎi",english:"listless, dispirited",front:"You look so listless today.",back:"你今天无精打采的。",backPinyin:"Nǐ jīntiān wú jīng dǎ cǎi de."},
+        {id:"c31b",type:"chengyu",expression:"无精打采",pinyin:"wú jīng dǎ cǎi",english:"listless, dispirited",front:"Why so down?",back:"怎么无精打采的？",backPinyin:"Zěnme wú jīng dǎ cǎi de?"},
+        // 32. 得意忘形
+        {id:"c32a",type:"chengyu",expression:"得意忘形",pinyin:"dé yì wàng xíng",english:"get carried away",front:"Don't get too carried away.",back:"别得意忘形。",backPinyin:"Bié dé yì wàng xíng."},
+        {id:"c32b",type:"chengyu",expression:"得意忘形",pinyin:"dé yì wàng xíng",english:"get carried away",front:"He got carried away again.",back:"他又得意忘形了。",backPinyin:"Tā yòu dé yì wàng xíng le."},
+        // 33. 恍然大悟
+        {id:"c33a",type:"chengyu",expression:"恍然大悟",pinyin:"huǎng rán dà wù",english:"suddenly realize",front:"I suddenly understood.",back:"我恍然大悟。",backPinyin:"Wǒ huǎng rán dà wù."},
+        {id:"c33b",type:"chengyu",expression:"恍然大悟",pinyin:"huǎng rán dà wù",english:"suddenly realize",front:"She finally got it.",back:"她恍然大悟了。",backPinyin:"Tā huǎng rán dà wù le."},
+        // 34. 全力以赴
+        {id:"c34a",type:"chengyu",expression:"全力以赴",pinyin:"quán lì yǐ fù",english:"go all out",front:"I'll give it my all.",back:"我会全力以赴。",backPinyin:"Wǒ huì quán lì yǐ fù."},
+        {id:"c34b",type:"chengyu",expression:"全力以赴",pinyin:"quán lì yǐ fù",english:"go all out",front:"Let's go all out.",back:"我们全力以赴吧。",backPinyin:"Wǒmen quán lì yǐ fù ba."},
+        // 35. 半信半疑
+        {id:"c35a",type:"chengyu",expression:"半信半疑",pinyin:"bàn xìn bàn yí",english:"half believing, half doubting",front:"I'm skeptical about it.",back:"我半信半疑。",backPinyin:"Wǒ bàn xìn bàn yí."},
+        {id:"c35b",type:"chengyu",expression:"半信半疑",pinyin:"bàn xìn bàn yí",english:"half believing, half doubting",front:"She looked doubtful.",back:"她半信半疑的样子。",backPinyin:"Tā bàn xìn bàn yí de yàngzi."},
+        // 36. 想方设法
+        {id:"c36a",type:"chengyu",expression:"想方设法",pinyin:"xiǎng fāng shè fǎ",english:"try every possible way",front:"I'll find a way somehow.",back:"我会想方设法的。",backPinyin:"Wǒ huì xiǎng fāng shè fǎ de."},
+        {id:"c36b",type:"chengyu",expression:"想方设法",pinyin:"xiǎng fāng shè fǎ",english:"try every possible way",front:"He tried everything.",back:"他想方设法解决。",backPinyin:"Tā xiǎng fāng shè fǎ jiějué."},
+        // 37. 实话实说
+        {id:"c37a",type:"chengyu",expression:"实话实说",pinyin:"shí huà shí shuō",english:"tell it like it is",front:"Just tell me the truth.",back:"你就实话实说吧。",backPinyin:"Nǐ jiù shí huà shí shuō ba."},
+        {id:"c37b",type:"chengyu",expression:"实话实说",pinyin:"shí huà shí shuō",english:"tell it like it is",front:"To be honest with you...",back:"实话实说吧...",backPinyin:"Shí huà shí shuō ba..."},
+        // 38. 随心所欲
+        {id:"c38a",type:"chengyu",expression:"随心所欲",pinyin:"suí xīn suǒ yù",english:"do as one pleases",front:"I want to do as I please.",back:"我想随心所欲。",backPinyin:"Wǒ xiǎng suí xīn suǒ yù."},
+        {id:"c38b",type:"chengyu",expression:"随心所欲",pinyin:"suí xīn suǒ yù",english:"do as one pleases",front:"You can't just do whatever.",back:"你不能随心所欲。",backPinyin:"Nǐ bù néng suí xīn suǒ yù."},
+        // 39. 自讨苦吃
+        {id:"c39a",type:"chengyu",expression:"自讨苦吃",pinyin:"zì tǎo kǔ chī",english:"asking for trouble",front:"You're asking for trouble.",back:"你这是自讨苦吃。",backPinyin:"Nǐ zhè shì zì tǎo kǔ chī."},
+        {id:"c39b",type:"chengyu",expression:"自讨苦吃",pinyin:"zì tǎo kǔ chī",english:"asking for trouble",front:"Why bring trouble on yourself?",back:"何必自讨苦吃？",backPinyin:"Hébì zì tǎo kǔ chī?"},
+        // 40. 自找麻烦
+        {id:"c40a",type:"chengyu",expression:"自找麻烦",pinyin:"zì zhǎo má fan",english:"asking for trouble",front:"You're just asking for trouble.",back:"你这是自找麻烦。",backPinyin:"Nǐ zhè shì zì zhǎo má fan."},
+        {id:"c40b",type:"chengyu",expression:"自找麻烦",pinyin:"zì zhǎo má fan",english:"asking for trouble",front:"Don't make trouble for yourself.",back:"别自找麻烦。",backPinyin:"Bié zì zhǎo má fan."},
+        // 41. 大惊小怪
+        {id:"c41a",type:"chengyu",expression:"大惊小怪",pinyin:"dà jīng xiǎo guài",english:"make a fuss over nothing",front:"What's the big fuss?",back:"有什么大惊小怪的？",backPinyin:"Yǒu shénme dà jīng xiǎo guài de?"},
+        {id:"c41b",type:"chengyu",expression:"大惊小怪",pinyin:"dà jīng xiǎo guài",english:"make a fuss over nothing",front:"Don't make such a fuss.",back:"别大惊小怪的。",backPinyin:"Bié dà jīng xiǎo guài de."},
+        // 42. 心血来潮
+        {id:"c42a",type:"chengyu",expression:"心血来潮",pinyin:"xīn xuè lái cháo",english:"on a whim",front:"I did it on a whim.",back:"我心血来潮就做了。",backPinyin:"Wǒ xīn xuè lái cháo jiù zuò le."},
+        {id:"c42b",type:"chengyu",expression:"心血来潮",pinyin:"xīn xuè lái cháo",english:"on a whim",front:"He suddenly got the urge.",back:"他心血来潮。",backPinyin:"Tā xīn xuè lái cháo."},
+        // 43. 一见钟情
+        {id:"c43a",type:"chengyu",expression:"一见钟情",pinyin:"yī jiàn zhōng qíng",english:"love at first sight",front:"It was love at first sight.",back:"我们一见钟情。",backPinyin:"Wǒmen yī jiàn zhōng qíng."},
+        {id:"c43b",type:"chengyu",expression:"一见钟情",pinyin:"yī jiàn zhōng qíng",english:"love at first sight",front:"He fell for her instantly.",back:"他对她一见钟情。",backPinyin:"Tā duì tā yī jiàn zhōng qíng."},
+        // 44. 一拍即合
+        {id:"c44a",type:"chengyu",expression:"一拍即合",pinyin:"yī pāi jí hé",english:"hit it off immediately",front:"We hit it off right away.",back:"我们一拍即合。",backPinyin:"Wǒmen yī pāi jí hé."},
+        {id:"c44b",type:"chengyu",expression:"一拍即合",pinyin:"yī pāi jí hé",english:"hit it off immediately",front:"They clicked instantly.",back:"他们一拍即合。",backPinyin:"Tāmen yī pāi jí hé."},
+        // 45. 不了了之
+        {id:"c45a",type:"chengyu",expression:"不了了之",pinyin:"bù liǎo liǎo zhī",english:"let it fizzle out",front:"The matter just fizzled out.",back:"这件事不了了之了。",backPinyin:"Zhè jiàn shì bù liǎo liǎo zhī le."},
+        {id:"c45b",type:"chengyu",expression:"不了了之",pinyin:"bù liǎo liǎo zhī",english:"let it fizzle out",front:"Let's just drop it.",back:"就这样不了了之吧。",backPinyin:"Jiù zhèyàng bù liǎo liǎo zhī ba."},
+        // 46. 一言难尽
+        {id:"c46a",type:"chengyu",expression:"一言难尽",pinyin:"yī yán nán jìn",english:"it's a long story",front:"It's a long story.",back:"一言难尽啊。",backPinyin:"Yī yán nán jìn a."},
+        {id:"c46b",type:"chengyu",expression:"一言难尽",pinyin:"yī yán nán jìn",english:"it's a long story",front:"It's hard to explain briefly.",back:"这事一言难尽。",backPinyin:"Zhè shì yī yán nán jìn."},
+        // 47. 想入非非
+        {id:"c47a",type:"chengyu",expression:"想入非非",pinyin:"xiǎng rù fēi fēi",english:"indulge in fantasy",front:"Stop daydreaming.",back:"别想入非非了。",backPinyin:"Bié xiǎng rù fēi fēi le."},
+        {id:"c47b",type:"chengyu",expression:"想入非非",pinyin:"xiǎng rù fēi fēi",english:"indulge in fantasy",front:"He's lost in fantasy again.",back:"他又想入非非了。",backPinyin:"Tā yòu xiǎng rù fēi fēi le."},
+        // 48. 破罐破摔
+        {id:"c48a",type:"chengyu",expression:"破罐破摔",pinyin:"pò guàn pò shuāi",english:"give up on oneself",front:"He's completely given up.",back:"他破罐破摔了。",backPinyin:"Tā pò guàn pò shuāi le."},
+        {id:"c48b",type:"chengyu",expression:"破罐破摔",pinyin:"pò guàn pò shuāi",english:"give up on oneself",front:"Don't just give up.",back:"别破罐破摔。",backPinyin:"Bié pò guàn pò shuāi."},
+        // 49. 一事无成
+        {id:"c49a",type:"chengyu",expression:"一事无成",pinyin:"yī shì wú chéng",english:"accomplish nothing",front:"I've accomplished nothing.",back:"我一事无成。",backPinyin:"Wǒ yī shì wú chéng."},
+        {id:"c49b",type:"chengyu",expression:"一事无成",pinyin:"yī shì wú chéng",english:"accomplish nothing",front:"He's achieved nothing so far.",back:"他到现在一事无成。",backPinyin:"Tā dào xiànzài yī shì wú chéng."},
+        // 50. 心有余悸
+        {id:"c50a",type:"chengyu",expression:"心有余悸",pinyin:"xīn yǒu yú jì",english:"still shaken by it",front:"I'm still shaken by it.",back:"我现在还心有余悸。",backPinyin:"Wǒ xiànzài hái xīn yǒu yú jì."},
+        {id:"c50b",type:"chengyu",expression:"心有余悸",pinyin:"xīn yǒu yú jì",english:"still shaken by it",front:"The memory still scares me.",back:"想起来还心有余悸。",backPinyin:"Xiǎng qǐlái hái xīn yǒu yú jì."},
+        // 51-100 Chengyu
+        {id:"c51a",type:"chengyu",expression:"后悔莫及",pinyin:"hòu huǐ mò jí",english:"too late for regrets",front:"It's too late for regrets.",back:"现在后悔莫及。",backPinyin:"Xiànzài hòu huǐ mò jí."},
+        {id:"c51b",type:"chengyu",expression:"后悔莫及",pinyin:"hòu huǐ mò jí",english:"too late for regrets",front:"You'll regret it later.",back:"到时候后悔莫及。",backPinyin:"Dào shíhou hòu huǐ mò jí."},
+        {id:"c52a",type:"chengyu",expression:"不以为然",pinyin:"bù yǐ wéi rán",english:"disagree",front:"He disagreed with me.",back:"他不以为然。",backPinyin:"Tā bù yǐ wéi rán."},
+        {id:"c52b",type:"chengyu",expression:"不以为然",pinyin:"bù yǐ wéi rán",english:"disagree",front:"She didn't think so.",back:"她不以为然地摇头。",backPinyin:"Tā bù yǐ wéi rán de yáotóu."},
+        {id:"c53a",type:"chengyu",expression:"说来话长",pinyin:"shuō lái huà cháng",english:"it's a long story",front:"It's a long story.",back:"说来话长。",backPinyin:"Shuō lái huà cháng."},
+        {id:"c53b",type:"chengyu",expression:"说来话长",pinyin:"shuō lái huà cháng",english:"it's a long story",front:"Where do I even begin?",back:"这个说来话长。",backPinyin:"Zhège shuō lái huà cháng."},
+        {id:"c54a",type:"chengyu",expression:"入乡随俗",pinyin:"rù xiāng suí sú",english:"when in Rome",front:"When in Rome, do as Romans do.",back:"入乡随俗嘛。",backPinyin:"Rù xiāng suí sú ma."},
+        {id:"c54b",type:"chengyu",expression:"入乡随俗",pinyin:"rù xiāng suí sú",english:"when in Rome",front:"Just follow local customs.",back:"你要入乡随俗。",backPinyin:"Nǐ yào rù xiāng suí sú."},
+        {id:"c55a",type:"chengyu",expression:"话不投机",pinyin:"huà bù tóu jī",english:"can't see eye to eye",front:"We just don't click.",back:"我们话不投机。",backPinyin:"Wǒmen huà bù tóu jī."},
+        {id:"c55b",type:"chengyu",expression:"话不投机",pinyin:"huà bù tóu jī",english:"can't see eye to eye",front:"If we don't click, leave.",back:"话不投机半句多。",backPinyin:"Huà bù tóu jī bàn jù duō."},
+        {id:"c56a",type:"chengyu",expression:"言行不一",pinyin:"yán xíng bù yī",english:"words don't match actions",front:"His words don't match actions.",back:"他言行不一。",backPinyin:"Tā yán xíng bù yī."},
+        {id:"c56b",type:"chengyu",expression:"言行不一",pinyin:"yán xíng bù yī",english:"words don't match actions",front:"Don't be hypocritical.",back:"别言行不一。",backPinyin:"Bié yán xíng bù yī."},
+        {id:"c57a",type:"chengyu",expression:"名不虚传",pinyin:"míng bù xū chuán",english:"lives up to reputation",front:"It lives up to its name.",back:"果然名不虚传。",backPinyin:"Guǒrán míng bù xū chuán."},
+        {id:"c57b",type:"chengyu",expression:"名不虚传",pinyin:"míng bù xū chuán",english:"lives up to reputation",front:"The hype is real.",back:"真是名不虚传！",backPinyin:"Zhēn shì míng bù xū chuán!"},
+        {id:"c58a",type:"chengyu",expression:"名副其实",pinyin:"míng fù qí shí",english:"worthy of the name",front:"He's worthy of the title.",back:"他名副其实。",backPinyin:"Tā míng fù qí shí."},
+        {id:"c58b",type:"chengyu",expression:"名副其实",pinyin:"míng fù qí shí",english:"worthy of the name",front:"It's the real deal.",back:"这是名副其实的。",backPinyin:"Zhè shì míng fù qí shí de."},
+        {id:"c59a",type:"chengyu",expression:"自相矛盾",pinyin:"zì xiāng máo dùn",english:"self-contradictory",front:"You're contradicting yourself.",back:"你自相矛盾。",backPinyin:"Nǐ zì xiāng máo dùn."},
+        {id:"c59b",type:"chengyu",expression:"自相矛盾",pinyin:"zì xiāng máo dùn",english:"self-contradictory",front:"That doesn't make sense.",back:"这不是自相矛盾吗？",backPinyin:"Zhè bú shì zì xiāng máo dùn ma?"},
+        {id:"c60a",type:"chengyu",expression:"无话可说",pinyin:"wú huà kě shuō",english:"speechless",front:"I'm speechless.",back:"我无话可说。",backPinyin:"Wǒ wú huà kě shuō."},
+        {id:"c60b",type:"chengyu",expression:"无话可说",pinyin:"wú huà kě shuō",english:"speechless",front:"There's nothing to say.",back:"对此我无话可说。",backPinyin:"Duì cǐ wǒ wú huà kě shuō."},
+        {id:"c61a",type:"chengyu",expression:"百思不解",pinyin:"bǎi sī bù jiě",english:"completely puzzled",front:"I'm completely puzzled.",back:"我百思不解。",backPinyin:"Wǒ bǎi sī bù jiě."},
+        {id:"c61b",type:"chengyu",expression:"百思不解",pinyin:"bǎi sī bù jiě",english:"completely puzzled",front:"I just can't figure it out.",back:"真是百思不解。",backPinyin:"Zhēn shì bǎi sī bù jiě."},
+        {id:"c62a",type:"chengyu",expression:"一窍不通",pinyin:"yī qiào bù tōng",english:"know nothing about",front:"I know nothing about this.",back:"我一窍不通。",backPinyin:"Wǒ yī qiào bù tōng."},
+        {id:"c62b",type:"chengyu",expression:"一窍不通",pinyin:"yī qiào bù tōng",english:"know nothing about",front:"He's clueless about tech.",back:"他对科技一窍不通。",backPinyin:"Tā duì kējì yī qiào bù tōng."},
+        {id:"c63a",type:"chengyu",expression:"一知半解",pinyin:"yī zhī bàn jiě",english:"half-baked understanding",front:"I only half understand.",back:"我只是一知半解。",backPinyin:"Wǒ zhǐshì yī zhī bàn jiě."},
+        {id:"c63b",type:"chengyu",expression:"一知半解",pinyin:"yī zhī bàn jiě",english:"half-baked understanding",front:"Don't pretend to know.",back:"别一知半解装懂。",backPinyin:"Bié yī zhī bàn jiě zhuāng dǒng."},
+        {id:"c64a",type:"chengyu",expression:"不管三七二十一",pinyin:"bù guǎn sān qī èr shí yī",english:"regardless of consequences",front:"I don't care, I'm doing it.",back:"不管三七二十一。",backPinyin:"Bù guǎn sān qī èr shí yī."},
+        {id:"c64b",type:"chengyu",expression:"不管三七二十一",pinyin:"bù guǎn sān qī èr shí yī",english:"regardless of consequences",front:"He just did it anyway.",back:"他不管三七二十一就做了。",backPinyin:"Tā bù guǎn sān qī èr shí yī jiù zuò le."},
+        {id:"c65a",type:"chengyu",expression:"事与愿违",pinyin:"shì yǔ yuàn wéi",english:"things didn't go as hoped",front:"Things didn't go as planned.",back:"结果事与愿违。",backPinyin:"Jiéguǒ shì yǔ yuàn wéi."},
+        {id:"c65b",type:"chengyu",expression:"事与愿违",pinyin:"shì yǔ yuàn wéi",english:"things didn't go as hoped",front:"It backfired.",back:"没想到事与愿违。",backPinyin:"Méi xiǎngdào shì yǔ yuàn wéi."},
+        {id:"c66a",type:"chengyu",expression:"一厢情愿",pinyin:"yī xiāng qíng yuàn",english:"one-sided wishful thinking",front:"That's just wishful thinking.",back:"你这是一厢情愿。",backPinyin:"Nǐ zhè shì yī xiāng qíng yuàn."},
+        {id:"c66b",type:"chengyu",expression:"一厢情愿",pinyin:"yī xiāng qíng yuàn",english:"one-sided wishful thinking",front:"Don't assume it's mutual.",back:"别一厢情愿。",backPinyin:"Bié yī xiāng qíng yuàn."},
+        {id:"c67a",type:"chengyu",expression:"心直口快",pinyin:"xīn zhí kǒu kuài",english:"blunt, outspoken",front:"She's very blunt.",back:"她心直口快。",backPinyin:"Tā xīn zhí kǒu kuài."},
+        {id:"c67b",type:"chengyu",expression:"心直口快",pinyin:"xīn zhí kǒu kuài",english:"blunt, outspoken",front:"I speak my mind directly.",back:"我这人心直口快。",backPinyin:"Wǒ zhè rén xīn zhí kǒu kuài."},
+        {id:"c68a",type:"chengyu",expression:"口是心非",pinyin:"kǒu shì xīn fēi",english:"say one thing, mean another",front:"He says one thing but means another.",back:"他口是心非。",backPinyin:"Tā kǒu shì xīn fēi."},
+        {id:"c68b",type:"chengyu",expression:"口是心非",pinyin:"kǒu shì xīn fēi",english:"say one thing, mean another",front:"Don't be two-faced.",back:"别口是心非。",backPinyin:"Bié kǒu shì xīn fēi."},
+        {id:"c69a",type:"chengyu",expression:"装模作样",pinyin:"zhuāng mú zuò yàng",english:"put on an act",front:"Stop putting on an act.",back:"别装模作样的。",backPinyin:"Bié zhuāng mú zuò yàng de."},
+        {id:"c69b",type:"chengyu",expression:"装模作样",pinyin:"zhuāng mú zuò yàng",english:"put on an act",front:"He's just pretending.",back:"他在装模作样。",backPinyin:"Tā zài zhuāng mú zuò yàng."},
+        {id:"c70a",type:"chengyu",expression:"装疯卖傻",pinyin:"zhuāng fēng mài shǎ",english:"play dumb",front:"Stop playing dumb.",back:"别装疯卖傻。",backPinyin:"Bié zhuāng fēng mài shǎ."},
+        {id:"c70b",type:"chengyu",expression:"装疯卖傻",pinyin:"zhuāng fēng mài shǎ",english:"play dumb",front:"I know you're faking it.",back:"你装疯卖傻也没用。",backPinyin:"Nǐ zhuāng fēng mài shǎ yě méi yòng."},
+        {id:"c71a",type:"chengyu",expression:"假装不知道",pinyin:"jiǎ zhuāng bù zhī dào",english:"pretend not to know",front:"He pretended not to know.",back:"他假装不知道。",backPinyin:"Tā jiǎ zhuāng bù zhī dào."},
+        {id:"c71b",type:"chengyu",expression:"假装不知道",pinyin:"jiǎ zhuāng bù zhī dào",english:"pretend not to know",front:"Don't act like you don't know.",back:"别假装不知道。",backPinyin:"Bié jiǎ zhuāng bù zhī dào."},
+        {id:"c72a",type:"chengyu",expression:"顺其自然",pinyin:"shùn qí zì rán",english:"let nature take its course",front:"Just let it happen naturally.",back:"顺其自然吧。",backPinyin:"Shùn qí zì rán ba."},
+        {id:"c72b",type:"chengyu",expression:"顺其自然",pinyin:"shùn qí zì rán",english:"let nature take its course",front:"Don't force it.",back:"别强求，顺其自然。",backPinyin:"Bié qiǎngqiú, shùn qí zì rán."},
+        {id:"c73a",type:"chengyu",expression:"随遇而安",pinyin:"suí yù ér ān",english:"make the best of it",front:"Just go with the flow.",back:"我随遇而安。",backPinyin:"Wǒ suí yù ér ān."},
+        {id:"c73b",type:"chengyu",expression:"随遇而安",pinyin:"suí yù ér ān",english:"make the best of it",front:"Adapt to circumstances.",back:"要学会随遇而安。",backPinyin:"Yào xuéhuì suí yù ér ān."},
+        {id:"c74a",type:"chengyu",expression:"见怪不怪",pinyin:"jiàn guài bù guài",english:"not surprised by weirdness",front:"I'm used to weird stuff.",back:"见怪不怪了。",backPinyin:"Jiàn guài bù guài le."},
+        {id:"c74b",type:"chengyu",expression:"见怪不怪",pinyin:"jiàn guài bù guài",english:"not surprised by weirdness",front:"Nothing surprises me anymore.",back:"我已经见怪不怪。",backPinyin:"Wǒ yǐjīng jiàn guài bù guài."},
+        {id:"c75a",type:"chengyu",expression:"习以为常",pinyin:"xí yǐ wéi cháng",english:"used to it",front:"I'm used to it now.",back:"我已经习以为常。",backPinyin:"Wǒ yǐjīng xí yǐ wéi cháng."},
+        {id:"c75b",type:"chengyu",expression:"习以为常",pinyin:"xí yǐ wéi cháng",english:"used to it",front:"It became normal.",back:"大家都习以为常了。",backPinyin:"Dàjiā dōu xí yǐ wéi cháng le."},
+        {id:"c76a",type:"chengyu",expression:"司空见惯",pinyin:"sī kōng jiàn guàn",english:"nothing new",front:"It's nothing new.",back:"这种事司空见惯。",backPinyin:"Zhè zhǒng shì sī kōng jiàn guàn."},
+        {id:"c76b",type:"chengyu",expression:"司空见惯",pinyin:"sī kōng jiàn guàn",english:"nothing new",front:"I've seen it all before.",back:"我早就司空见惯。",backPinyin:"Wǒ zǎo jiù sī kōng jiàn guàn."},
+        {id:"c77a",type:"chengyu",expression:"一如既往",pinyin:"yī rú jì wǎng",english:"same as always",front:"Same as always.",back:"一如既往。",backPinyin:"Yī rú jì wǎng."},
+        {id:"c77b",type:"chengyu",expression:"一如既往",pinyin:"yī rú jì wǎng",english:"same as always",front:"He's the same as ever.",back:"他一如既往。",backPinyin:"Tā yī rú jì wǎng."},
+        {id:"c78a",type:"chengyu",expression:"依然如故",pinyin:"yī rán rú gù",english:"still the same",front:"Everything's still the same.",back:"一切依然如故。",backPinyin:"Yíqiè yī rán rú gù."},
+        {id:"c78b",type:"chengyu",expression:"依然如故",pinyin:"yī rán rú gù",english:"still the same",front:"Nothing has changed.",back:"这里依然如故。",backPinyin:"Zhèlǐ yī rán rú gù."},
+        {id:"c79a",type:"chengyu",expression:"物是人非",pinyin:"wù shì rén fēi",english:"things remain, people change",front:"The place is the same, but people changed.",back:"物是人非啊。",backPinyin:"Wù shì rén fēi a."},
+        {id:"c79b",type:"chengyu",expression:"物是人非",pinyin:"wù shì rén fēi",english:"things remain, people change",front:"Everything feels different now.",back:"回来后感觉物是人非。",backPinyin:"Huílái hòu gǎnjué wù shì rén fēi."},
+        {id:"c80a",type:"chengyu",expression:"今非昔比",pinyin:"jīn fēi xī bǐ",english:"times have changed",front:"Times have changed.",back:"今非昔比了。",backPinyin:"Jīn fēi xī bǐ le."},
+        {id:"c80b",type:"chengyu",expression:"今非昔比",pinyin:"jīn fēi xī bǐ",english:"times have changed",front:"It's not like before.",back:"现在今非昔比。",backPinyin:"Xiànzài jīn fēi xī bǐ."},
+        {id:"c81a",type:"chengyu",expression:"一成不变",pinyin:"yī chéng bù biàn",english:"never changes",front:"It never changes.",back:"他一成不变。",backPinyin:"Tā yī chéng bù biàn."},
+        {id:"c81b",type:"chengyu",expression:"一成不变",pinyin:"yī chéng bù biàn",english:"never changes",front:"Life here is always the same.",back:"这里的生活一成不变。",backPinyin:"Zhèlǐ de shēnghuó yī chéng bù biàn."},
+        {id:"c82a",type:"chengyu",expression:"墨守成规",pinyin:"mò shǒu chéng guī",english:"stick to old ways",front:"He sticks to old ways.",back:"他墨守成规。",backPinyin:"Tā mò shǒu chéng guī."},
+        {id:"c82b",type:"chengyu",expression:"墨守成规",pinyin:"mò shǒu chéng guī",english:"stick to old ways",front:"Don't be so set in your ways.",back:"别墨守成规。",backPinyin:"Bié mò shǒu chéng guī."},
+        {id:"c83a",type:"chengyu",expression:"固执己见",pinyin:"gù zhí jǐ jiàn",english:"stubborn",front:"He's so stubborn.",back:"他太固执己见了。",backPinyin:"Tā tài gù zhí jǐ jiàn le."},
+        {id:"c83b",type:"chengyu",expression:"固执己见",pinyin:"gù zhí jǐ jiàn",english:"stubborn",front:"Don't be so stubborn.",back:"别固执己见。",backPinyin:"Bié gù zhí jǐ jiàn."},
+        {id:"c84a",type:"chengyu",expression:"自作聪明",pinyin:"zì zuò cōng míng",english:"think you're so smart",front:"Don't be a smartass.",back:"别自作聪明。",backPinyin:"Bié zì zuò cōng míng."},
+        {id:"c84b",type:"chengyu",expression:"自作聪明",pinyin:"zì zuò cōng míng",english:"think you're so smart",front:"He thought he was clever.",back:"他自作聪明。",backPinyin:"Tā zì zuò cōng míng."},
+        {id:"c85a",type:"chengyu",expression:"聪明反被聪明误",pinyin:"cōng míng fǎn bèi cōng míng wù",english:"too clever by half",front:"He outsmarted himself.",back:"聪明反被聪明误。",backPinyin:"Cōng míng fǎn bèi cōng míng wù."},
+        {id:"c85b",type:"chengyu",expression:"聪明反被聪明误",pinyin:"cōng míng fǎn bèi cōng míng wù",english:"too clever by half",front:"Being too clever backfired.",back:"这就是聪明反被聪明误。",backPinyin:"Zhè jiùshì cōng míng fǎn bèi cōng míng wù."},
+        {id:"c86a",type:"chengyu",expression:"弄巧成拙",pinyin:"nòng qiǎo chéng zhuō",english:"outsmart yourself",front:"It backfired on me.",back:"结果弄巧成拙。",backPinyin:"Jiéguǒ nòng qiǎo chéng zhuō."},
+        {id:"c86b",type:"chengyu",expression:"弄巧成拙",pinyin:"nòng qiǎo chéng zhuō",english:"outsmart yourself",front:"Don't mess it up trying to be clever.",back:"小心弄巧成拙。",backPinyin:"Xiǎoxīn nòng qiǎo chéng zhuō."},
+        {id:"c87a",type:"chengyu",expression:"画蛇添足",pinyin:"huà shé tiān zú",english:"overdo it",front:"You're overdoing it.",back:"你这是画蛇添足。",backPinyin:"Nǐ zhè shì huà shé tiān zú."},
+        {id:"c87b",type:"chengyu",expression:"画蛇添足",pinyin:"huà shé tiān zú",english:"overdo it",front:"Don't add unnecessary stuff.",back:"别画蛇添足。",backPinyin:"Bié huà shé tiān zú."},
+        {id:"c88a",type:"chengyu",expression:"多此一举",pinyin:"duō cǐ yī jǔ",english:"unnecessary action",front:"That was unnecessary.",back:"这是多此一举。",backPinyin:"Zhè shì duō cǐ yī jǔ."},
+        {id:"c88b",type:"chengyu",expression:"多此一举",pinyin:"duō cǐ yī jǔ",english:"unnecessary action",front:"Why bother? It's pointless.",back:"何必呢？多此一举。",backPinyin:"Hébì ne? Duō cǐ yī jǔ."},
+        {id:"c89a",type:"chengyu",expression:"适可而止",pinyin:"shì kě ér zhǐ",english:"know when to stop",front:"Know when to stop.",back:"要适可而止。",backPinyin:"Yào shì kě ér zhǐ."},
+        {id:"c89b",type:"chengyu",expression:"适可而止",pinyin:"shì kě ér zhǐ",english:"know when to stop",front:"Don't go too far.",back:"适可而止吧。",backPinyin:"Shì kě ér zhǐ ba."},
+        {id:"c90a",type:"chengyu",expression:"恰到好处",pinyin:"qià dào hǎo chù",english:"just right",front:"It's just right.",back:"恰到好处。",backPinyin:"Qià dào hǎo chù."},
+        {id:"c90b",type:"chengyu",expression:"恰到好处",pinyin:"qià dào hǎo chù",english:"just right",front:"The timing was perfect.",back:"时机恰到好处。",backPinyin:"Shíjī qià dào hǎo chù."},
+        {id:"c91a",type:"chengyu",expression:"差不多",pinyin:"chà bu duō",english:"almost, close enough",front:"Close enough.",back:"差不多了。",backPinyin:"Chà bu duō le."},
+        {id:"c91b",type:"chengyu",expression:"差不多",pinyin:"chà bu duō",english:"almost, close enough",front:"It's about the same.",back:"都差不多。",backPinyin:"Dōu chà bu duō."},
+        {id:"c92a",type:"chengyu",expression:"八九不离十",pinyin:"bā jiǔ bù lí shí",english:"pretty much",front:"You're pretty much right.",back:"八九不离十。",backPinyin:"Bā jiǔ bù lí shí."},
+        {id:"c92b",type:"chengyu",expression:"八九不离十",pinyin:"bā jiǔ bù lí shí",english:"pretty much",front:"My guess is close.",back:"我猜八九不离十。",backPinyin:"Wǒ cāi bā jiǔ bù lí shí."},
+        {id:"c93a",type:"chengyu",expression:"七七八八",pinyin:"qī qī bā bā",english:"mostly, roughly",front:"It's mostly done.",back:"七七八八了。",backPinyin:"Qī qī bā bā le."},
+        {id:"c93b",type:"chengyu",expression:"七七八八",pinyin:"qī qī bā bā",english:"mostly, roughly",front:"Almost everything is ready.",back:"准备得七七八八了。",backPinyin:"Zhǔnbèi de qī qī bā bā le."},
+        {id:"c94a",type:"chengyu",expression:"凑合",pinyin:"còu he",english:"make do",front:"It'll do.",back:"凑合吧。",backPinyin:"Còu he ba."},
+        {id:"c94b",type:"chengyu",expression:"凑合",pinyin:"còu he",english:"make do",front:"Let's just make do.",back:"先凑合着用。",backPinyin:"Xiān còu he zhe yòng."},
+        {id:"c95a",type:"chengyu",expression:"将就",pinyin:"jiāng jiu",english:"make do with",front:"Just make do with it.",back:"将就一下吧。",backPinyin:"Jiāng jiu yíxià ba."},
+        {id:"c95b",type:"chengyu",expression:"将就",pinyin:"jiāng jiu",english:"make do with",front:"It's not great, but it works.",back:"将就能用。",backPinyin:"Jiāng jiu néng yòng."},
+        {id:"c96a",type:"chengyu",expression:"不三不四",pinyin:"bù sān bù sì",english:"shady, dubious",front:"Those people are shady.",back:"那些人不三不四的。",backPinyin:"Nàxiē rén bù sān bù sì de."},
+        {id:"c96b",type:"chengyu",expression:"不三不四",pinyin:"bù sān bù sì",english:"shady, dubious",front:"Don't say weird things.",back:"别说不三不四的话。",backPinyin:"Bié shuō bù sān bù sì de huà."},
+        {id:"c97a",type:"chengyu",expression:"乌七八糟",pinyin:"wū qī bā zāo",english:"filthy mess",front:"This place is a filthy mess.",back:"这里乌七八糟的。",backPinyin:"Zhèlǐ wū qī bā zāo de."},
+        {id:"c97b",type:"chengyu",expression:"乌七八糟",pinyin:"wū qī bā zāo",english:"filthy mess",front:"What a mess!",back:"搞得乌七八糟！",backPinyin:"Gǎo de wū qī bā zāo!"},
+        {id:"c98a",type:"chengyu",expression:"一清二楚",pinyin:"yī qīng èr chǔ",english:"crystal clear",front:"I understand completely.",back:"我一清二楚。",backPinyin:"Wǒ yī qīng èr chǔ."},
+        {id:"c98b",type:"chengyu",expression:"一清二楚",pinyin:"yī qīng èr chǔ",english:"crystal clear",front:"Make it crystal clear.",back:"说一清二楚。",backPinyin:"Shuō yī qīng èr chǔ."},
+        {id:"c99a",type:"chengyu",expression:"明明白白",pinyin:"míng míng bái bái",english:"perfectly clear",front:"Say it clearly.",back:"你明明白白说。",backPinyin:"Nǐ míng míng bái bái shuō."},
+        {id:"c99b",type:"chengyu",expression:"明明白白",pinyin:"míng míng bái bái",english:"perfectly clear",front:"I told you clearly.",back:"我说得明明白白。",backPinyin:"Wǒ shuō de míng míng bái bái."},
+        {id:"c100a",type:"chengyu",expression:"稀里哗啦",pinyin:"xī li huā lā",english:"crashing; falling apart",front:"It all fell apart.",back:"稀里哗啦全散了。",backPinyin:"Xī li huā lā quán sàn le."},
+        {id:"c100b",type:"chengyu",expression:"稀里哗啦",pinyin:"xī li huā lā",english:"crashing; falling apart",front:"The rain is pouring.",back:"雨下得稀里哗啦。",backPinyin:"Yǔ xià de xī li huā lā."},
+        // Colloquial Expressions (Sample - 50 key expressions)
+        {id:"e1a",type:"colloquial",expression:"受不了",pinyin:"shòu bù liǎo",english:"can't stand it",front:"I can't stand this heat.",back:"这热我受不了。",backPinyin:"Zhè rè wǒ shòu bù liǎo."},
+        {id:"e1b",type:"colloquial",expression:"受不了",pinyin:"shòu bù liǎo",english:"can't stand it",front:"I can't take it anymore.",back:"我真受不了了。",backPinyin:"Wǒ zhēn shòu bù liǎo le."},
+        {id:"e2a",type:"colloquial",expression:"搞不懂",pinyin:"gǎo bù dǒng",english:"can't figure out",front:"I can't figure it out.",back:"我搞不懂。",backPinyin:"Wǒ gǎo bù dǒng."},
+        {id:"e2b",type:"colloquial",expression:"搞不懂",pinyin:"gǎo bù dǒng",english:"can't figure out",front:"I don't get what he means.",back:"搞不懂他什么意思。",backPinyin:"Gǎo bù dǒng tā shénme yìsi."},
+        {id:"e3a",type:"colloquial",expression:"说不定",pinyin:"shuō bu dìng",english:"maybe, perhaps",front:"Maybe he'll come.",back:"说不定他会来。",backPinyin:"Shuō bu dìng tā huì lái."},
+        {id:"e3b",type:"colloquial",expression:"说不定",pinyin:"shuō bu dìng",english:"maybe, perhaps",front:"Who knows, it might work.",back:"说不定能行。",backPinyin:"Shuō bu dìng néng xíng."},
+        {id:"e4a",type:"colloquial",expression:"来不及",pinyin:"lái bu jí",english:"not enough time",front:"There's no time!",back:"来不及了！",backPinyin:"Lái bu jí le!"},
+        {id:"e4b",type:"colloquial",expression:"来不及",pinyin:"lái bu jí",english:"not enough time",front:"I won't make it in time.",back:"我来不及了。",backPinyin:"Wǒ lái bu jí le."},
+        {id:"e5a",type:"colloquial",expression:"懒得",pinyin:"lǎn de",english:"can't be bothered",front:"I can't be bothered to go.",back:"我懒得去。",backPinyin:"Wǒ lǎn de qù."},
+        {id:"e5b",type:"colloquial",expression:"懒得",pinyin:"lǎn de",english:"can't be bothered",front:"I don't feel like explaining.",back:"懒得解释。",backPinyin:"Lǎn de jiěshì."},
+        {id:"e6a",type:"colloquial",expression:"舍不得",pinyin:"shě bu de",english:"reluctant to part with",front:"I can't bear to throw it away.",back:"我舍不得扔。",backPinyin:"Wǒ shě bu de rēng."},
+        {id:"e6b",type:"colloquial",expression:"舍不得",pinyin:"shě bu de",english:"reluctant to part with",front:"I don't want to leave you.",back:"舍不得你走。",backPinyin:"Shě bu de nǐ zǒu."},
+        {id:"e7a",type:"colloquial",expression:"怪不得",pinyin:"guài bu de",english:"no wonder",front:"No wonder he's tired.",back:"怪不得他累。",backPinyin:"Guài bu de tā lèi."},
+        {id:"e7b",type:"colloquial",expression:"怪不得",pinyin:"guài bu de",english:"no wonder",front:"So that's why!",back:"怪不得呢！",backPinyin:"Guài bu de ne!"},
+        {id:"e8a",type:"colloquial",expression:"随便你",pinyin:"suí biàn nǐ",english:"suit yourself",front:"Do whatever you want.",back:"随便你吧。",backPinyin:"Suí biàn nǐ ba."},
+        {id:"e8b",type:"colloquial",expression:"随便你",pinyin:"suí biàn nǐ",english:"suit yourself",front:"It's up to you.",back:"随便你。",backPinyin:"Suí biàn nǐ."},
+        {id:"e9a",type:"colloquial",expression:"反正",pinyin:"fǎn zhèng",english:"anyway",front:"Anyway, I'm not going.",back:"反正我不去。",backPinyin:"Fǎn zhèng wǒ bú qù."},
+        {id:"e9b",type:"colloquial",expression:"反正",pinyin:"fǎn zhèng",english:"anyway",front:"It doesn't matter anyway.",back:"反正无所谓。",backPinyin:"Fǎn zhèng wú suǒ wèi."},
+        {id:"e10a",type:"colloquial",expression:"不会吧",pinyin:"bù huì ba",english:"no way",front:"No way! Really?",back:"不会吧？真的？",backPinyin:"Bù huì ba? Zhēn de?"},
+        {id:"e10b",type:"colloquial",expression:"不会吧",pinyin:"bù huì ba",english:"no way",front:"You can't be serious.",back:"不会吧！",backPinyin:"Bù huì ba!"},
+        {id:"e11a",type:"colloquial",expression:"算了",pinyin:"suàn le",english:"forget it",front:"Forget it, never mind.",back:"算了算了。",backPinyin:"Suàn le suàn le."},
+        {id:"e11b",type:"colloquial",expression:"算了",pinyin:"suàn le",english:"forget it",front:"Let's just drop it.",back:"算了吧。",backPinyin:"Suàn le ba."},
+        {id:"e12a",type:"colloquial",expression:"怎么回事",pinyin:"zěn me huí shì",english:"what's going on",front:"What's going on here?",back:"这是怎么回事？",backPinyin:"Zhè shì zěn me huí shì?"},
+        {id:"e12b",type:"colloquial",expression:"怎么回事",pinyin:"zěn me huí shì",english:"what's going on",front:"What happened?",back:"怎么回事？",backPinyin:"Zěn me huí shì?"},
+        {id:"e13a",type:"colloquial",expression:"没门儿",pinyin:"méi ménr",english:"no way",front:"No chance!",back:"没门儿！",backPinyin:"Méi ménr!"},
+        {id:"e13b",type:"colloquial",expression:"没门儿",pinyin:"méi ménr",english:"no way",front:"Not a chance.",back:"想都没门儿。",backPinyin:"Xiǎng dōu méi ménr."},
+        {id:"e14a",type:"colloquial",expression:"活该",pinyin:"huó gāi",english:"serves you right",front:"Serves you right!",back:"活该！",backPinyin:"Huó gāi!"},
+        {id:"e14b",type:"colloquial",expression:"活该",pinyin:"huó gāi",english:"serves you right",front:"You deserved it.",back:"你活该。",backPinyin:"Nǐ huó gāi."},
+        {id:"e15a",type:"colloquial",expression:"无语",pinyin:"wú yǔ",english:"speechless",front:"I'm speechless.",back:"我无语了。",backPinyin:"Wǒ wú yǔ le."},
+        {id:"e15b",type:"colloquial",expression:"无语",pinyin:"wú yǔ",english:"speechless",front:"I have no words.",back:"真是无语。",backPinyin:"Zhēn shì wú yǔ."},
+        {id:"e16a",type:"colloquial",expression:"拉倒",pinyin:"lā dǎo",english:"forget it",front:"Fine, forget it then.",back:"那就拉倒。",backPinyin:"Nà jiù lā dǎo."},
+        {id:"e16b",type:"colloquial",expression:"拉倒",pinyin:"lā dǎo",english:"forget it",front:"Whatever, drop it.",back:"拉倒吧。",backPinyin:"Lā dǎo ba."},
+        {id:"e17a",type:"colloquial",expression:"得了吧",pinyin:"dé le ba",english:"give me a break",front:"Oh come on!",back:"得了吧！",backPinyin:"Dé le ba!"},
+        {id:"e17b",type:"colloquial",expression:"得了吧",pinyin:"dé le ba",english:"give me a break",front:"Yeah right.",back:"得了吧你。",backPinyin:"Dé le ba nǐ."},
+        {id:"e18a",type:"colloquial",expression:"少来",pinyin:"shǎo lái",english:"cut it out",front:"Don't give me that.",back:"少来这套。",backPinyin:"Shǎo lái zhè tào."},
+        {id:"e18b",type:"colloquial",expression:"少来",pinyin:"shǎo lái",english:"cut it out",front:"Cut it out.",back:"你少来。",backPinyin:"Nǐ shǎo lái."},
+        {id:"e19a",type:"colloquial",expression:"真是的",pinyin:"zhēn shì de",english:"honestly, geez",front:"Honestly!",back:"真是的！",backPinyin:"Zhēn shì de!"},
+        {id:"e19b",type:"colloquial",expression:"真是的",pinyin:"zhēn shì de",english:"honestly, geez",front:"Geez, what's wrong with you?",back:"真是的，你怎么回事？",backPinyin:"Zhēn shì de, nǐ zěn me huí shì?"},
+        {id:"e20a",type:"colloquial",expression:"挺...的",pinyin:"tǐng...de",english:"pretty, quite",front:"It's pretty good.",back:"挺好的。",backPinyin:"Tǐng hǎo de."},
+        {id:"e20b",type:"colloquial",expression:"挺...的",pinyin:"tǐng...de",english:"pretty, quite",front:"He's pretty nice.",back:"他挺好的。",backPinyin:"Tā tǐng hǎo de."},
+        {id:"e21a",type:"colloquial",expression:"还行",pinyin:"hái xíng",english:"not bad",front:"It's okay.",back:"还行吧。",backPinyin:"Hái xíng ba."},
+        {id:"e21b",type:"colloquial",expression:"还行",pinyin:"hái xíng",english:"not bad",front:"Not bad.",back:"还行。",backPinyin:"Hái xíng."},
+        {id:"e22a",type:"colloquial",expression:"就这样吧",pinyin:"jiù zhè yàng ba",english:"let's leave it at that",front:"Let's leave it at that.",back:"就这样吧。",backPinyin:"Jiù zhè yàng ba."},
+        {id:"e22b",type:"colloquial",expression:"就这样吧",pinyin:"jiù zhè yàng ba",english:"let's leave it at that",front:"That's how it'll be.",back:"就这样吧。",backPinyin:"Jiù zhè yàng ba."},
+        {id:"e23a",type:"colloquial",expression:"赶紧",pinyin:"gǎn jǐn",english:"hurry up",front:"Hurry up!",back:"赶紧的！",backPinyin:"Gǎn jǐn de!"},
+        {id:"e23b",type:"colloquial",expression:"赶紧",pinyin:"gǎn jǐn",english:"hurry up",front:"Quick, let's go.",back:"赶紧走吧。",backPinyin:"Gǎn jǐn zǒu ba."},
+        {id:"e24a",type:"colloquial",expression:"不急",pinyin:"bù jí",english:"no rush",front:"No rush.",back:"不急。",backPinyin:"Bù jí."},
+        {id:"e24b",type:"colloquial",expression:"不急",pinyin:"bù jí",english:"no rush",front:"Take your time.",back:"不急不急。",backPinyin:"Bù jí bù jí."},
+        {id:"e25a",type:"colloquial",expression:"天哪",pinyin:"tiān na",english:"oh my god",front:"Oh my god!",back:"天哪！",backPinyin:"Tiān na!"},
+        {id:"e25b",type:"colloquial",expression:"天哪",pinyin:"tiān na",english:"oh my god",front:"My goodness!",back:"我的天哪！",backPinyin:"Wǒ de tiān na!"}
+    ];
+
+    // Spaced Repetition System
+    const INTERVALS = [1, 3, 7, 14, 30, 60]; // days
+    const STORAGE_KEY = 'chinese-flashcards-progress';
+
+    let progress = {};
+    let currentTypeFilter = 'all';
+    let currentModeFilter = 'both';
+    let sessionQueue = [];
+    let currentCard = null;
+    let sessionStart = 0;
+    let sessionTotal = 0;
+
+    function loadProgress() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            progress = JSON.parse(saved);
+        }
+    }
+
+    function saveProgress() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    }
+
+    function getCardProgress(cardId) {
+        if (!progress[cardId]) {
+            progress[cardId] = {
+                status: 'new',
+                interval: 0,
+                nextReview: null,
+                timesSeen: 0
+            };
+        }
+        return progress[cardId];
+    }
+
+    function getToday() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    function addDays(dateStr, days) {
+        const date = new Date(dateStr);
+        date.setDate(date.getDate() + days);
+        return date.toISOString().split('T')[0];
+    }
+
+    function isDue(cardId) {
+        const p = getCardProgress(cardId);
+        if (p.status === 'new') return true;
+        if (!p.nextReview) return true;
+        return p.nextReview <= getToday();
+    }
+
+    function updateStats() {
+        let newCount = 0, learningCount = 0, learnedCount = 0, dueCount = 0;
+
+        const filteredCards = cardData.filter(c =>
+            currentTypeFilter === 'all' || c.type === currentTypeFilter
+        );
+
+        filteredCards.forEach(card => {
+            const p = getCardProgress(card.id);
+            if (p.status === 'new') newCount++;
+            else if (p.status === 'learning') learningCount++;
+            else if (p.status === 'learned') learnedCount++;
+
+            if (isDue(card.id)) dueCount++;
+        });
+
+        document.getElementById('newCount').textContent = newCount;
+        document.getElementById('learningCount').textContent = learningCount;
+        document.getElementById('learnedCount').textContent = learnedCount;
+        document.getElementById('dueCount').textContent = dueCount;
+    }
+
+    function buildQueue() {
+        let cards = cardData.filter(c =>
+            currentTypeFilter === 'all' || c.type === currentTypeFilter
+        );
+
+        if (currentModeFilter === 'new') {
+            cards = cards.filter(c => getCardProgress(c.id).status === 'new');
+        } else if (currentModeFilter === 'review') {
+            cards = cards.filter(c => {
+                const p = getCardProgress(c.id);
+                return p.status !== 'new' && isDue(c.id);
+            });
+        } else {
+            cards = cards.filter(c => isDue(c.id));
+        }
+
+        // Shuffle
+        for (let i = cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [cards[i], cards[j]] = [cards[j], cards[i]];
+        }
+
+        sessionQueue = cards;
+        sessionStart = sessionQueue.length;
+        sessionTotal = sessionStart;
+        updateSessionInfo();
+    }
+
+    function updateSessionInfo() {
+        const remaining = sessionQueue.length;
+        const done = sessionStart - remaining;
+        document.getElementById('sessionInfo').textContent =
+            remaining > 0 ? `${done} done, ${remaining} remaining` : '';
+
+        const pct = sessionStart > 0 ? ((done / sessionStart) * 100) : 0;
+        document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    function showNextCard() {
+        document.getElementById('buttons').classList.remove('visible');
+
+        if (sessionQueue.length === 0) {
+            document.getElementById('cardArea').innerHTML = `
+                <div class="empty-state">
+                    <h2>All done!</h2>
+                    <p>No more cards due for review.</p>
+                    <p>Come back later or change filters.</p>
+                </div>
+            `;
+            updateStats();
+            updateSessionInfo();
+            return;
+        }
+
+        currentCard = sessionQueue.shift();
+
+        document.getElementById('cardArea').innerHTML = `
+            <div class="card-container">
+                <div class="card" id="flashcard" onclick="flipCard()">
+                    <div class="card-face card-front">
+                        <span class="card-tag">${currentCard.type === 'chengyu' ? '成语' : 'Colloquial'}</span>
+                        <div class="card-english">${currentCard.front}</div>
+                        <div class="tap-hint">Tap to reveal</div>
+                    </div>
+                    <div class="card-face card-back">
+                        <span class="card-tag">${currentCard.type === 'chengyu' ? '成语' : 'Colloquial'}</span>
+                        <div class="card-chinese">${currentCard.back}</div>
+                        <div class="card-pinyin">${currentCard.backPinyin}</div>
+                        <div class="card-expression">${currentCard.expression} · ${currentCard.english}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        updateSessionInfo();
+    }
+
+    function flipCard() {
+        const card = document.getElementById('flashcard');
+        if (!card.classList.contains('flipped')) {
+            card.classList.add('flipped');
+            document.getElementById('buttons').classList.add('visible');
+        }
+    }
+
+    function answer(quality) {
+        const p = getCardProgress(currentCard.id);
+        const today = getToday();
+
+        p.timesSeen++;
+
+        if (quality === 'again') {
+            // Reset - comes back this session
+            p.interval = 0;
+            p.status = 'learning';
+            p.nextReview = today;
+            // Add back to queue (random position in next 5-10 cards)
+            const pos = Math.min(sessionQueue.length, 5 + Math.floor(Math.random() * 5));
+            sessionQueue.splice(pos, 0, currentCard);
+        } else if (quality === 'hard') {
+            // Slower progression
+            if (p.interval === 0) {
+                p.interval = 1;
+            } else {
+                const idx = INTERVALS.indexOf(p.interval);
+                if (idx >= 0 && idx < INTERVALS.length - 1) {
+                    p.interval = INTERVALS[idx]; // Stay at same interval
+                }
+            }
+            p.nextReview = addDays(today, p.interval);
+            p.status = p.interval >= 7 ? 'learned' : 'learning';
+        } else { // good
+            if (p.interval === 0) {
+                p.interval = INTERVALS[0];
+            } else {
+                const idx = INTERVALS.indexOf(p.interval);
+                if (idx >= 0 && idx < INTERVALS.length - 1) {
+                    p.interval = INTERVALS[idx + 1];
+                } else if (idx === -1) {
+                    // Find next higher interval
+                    p.interval = INTERVALS.find(i => i > p.interval) || INTERVALS[INTERVALS.length - 1];
+                }
+            }
+            p.nextReview = addDays(today, p.interval);
+            p.status = p.interval >= 7 ? 'learned' : 'learning';
+        }
+
+        saveProgress();
+        updateStats();
+        showNextCard();
+    }
+
+    function setFilter(type, value) {
+        if (type === 'type') {
+            currentTypeFilter = value;
+            document.querySelectorAll('[data-type]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === value);
+            });
+        } else {
+            currentModeFilter = value;
+            document.querySelectorAll('[data-mode]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === value);
+            });
+        }
+        buildQueue();
+        updateStats();
+        showNextCard();
+    }
+
+    // Initialize
+    document.querySelectorAll('[data-type]').forEach(btn => {
+        btn.onclick = () => setFilter('type', btn.dataset.type);
+    });
+    document.querySelectorAll('[data-mode]').forEach(btn => {
+        btn.onclick = () => setFilter('mode', btn.dataset.mode);
+    });
+
+    loadProgress();
+    updateStats();
+    buildQueue();
+    showNextCard();
+    </script>
+</body>
+</html>
